@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: loomcut-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ATLAS_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: loomcut-db
+          property: connectionString
+
+databases:
+  - name: loomcut-db
+    plan: free
