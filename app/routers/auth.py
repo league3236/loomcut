@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.billing import is_admin
 from app.database import get_db
 from app.models import User
 from app.schemas import Token, UserCreate, UserOut
@@ -11,16 +12,26 @@ from app.security import create_access_token, get_current_user, hash_password, v
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+def to_user_out(user: User) -> UserOut:
+    return UserOut(
+        id=user.id,
+        email=user.email,
+        credits=user.credits,
+        is_admin=is_admin(user),
+        created_at=user.created_at,
+    )
+
+
 @router.post("/signup", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def signup(body: UserCreate, db: Session = Depends(get_db)):
     email = body.email.lower()
     if db.scalar(select(User).where(User.email == email)):
         raise HTTPException(status_code=409, detail="Email already registered")
-    user = User(email=email, password_hash=hash_password(body.password))
+    user = User(email=email, password_hash=hash_password(body.password), credits=0)
     db.add(user)
     db.commit()
     db.refresh(user)
-    return user
+    return to_user_out(user)
 
 
 @router.post("/login", response_model=Token)
@@ -38,4 +49,4 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
 
 @router.get("/me", response_model=UserOut)
 def me(user: User = Depends(get_current_user)):
-    return user
+    return to_user_out(user)

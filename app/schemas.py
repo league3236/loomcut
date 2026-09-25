@@ -17,10 +17,10 @@ class UserCreate(BaseModel):
 
 
 class UserOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
     id: int
     email: EmailStr
+    credits: int
+    is_admin: bool
     created_at: datetime
 
 
@@ -33,7 +33,8 @@ class VideoCreate(BaseModel):
     prompt: str = Field(min_length=1, max_length=2000)
     image_url: HttpUrl | None = None
     model: str | None = None
-    duration: int | None = Field(default=None, ge=1, le=30)
+    # 영상 길이(초). 없으면 기본값 사용. 길이에 비례해 크레딧 차감
+    duration: int | None = Field(default=None, ge=4, le=15)
 
 
 class VideoJobOut(BaseModel):
@@ -44,8 +45,60 @@ class VideoJobOut(BaseModel):
     model: str
     prompt: str
     image_url: str | None
+    duration: int
     status: str
     video_url: str | None
     error: str | None
+    charged: int
+    refunded: bool
     created_at: datetime
     updated_at: datetime
+
+
+class PackageOut(BaseModel):
+    id: str
+    name: str
+    amount: int
+    credits: int
+
+
+class PaymentConfigOut(BaseModel):
+    client_key: str
+    price_per_second: int
+    default_duration: int
+    packages: list[PackageOut]
+
+
+class OrderCreate(BaseModel):
+    package_id: str
+
+
+class OrderOut(BaseModel):
+    order_id: str
+    order_name: str
+    amount: int
+    credits: int
+    customer_email: str
+
+
+class PaymentConfirm(BaseModel):
+    payment_key: str
+    order_id: str
+    amount: int
+
+
+class PaymentResult(BaseModel):
+    order_id: str
+    status: str
+    credits_added: int
+    balance: int
+
+
+class CreditTransactionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    amount: int
+    reason: str
+    ref: str | None
+    created_at: datetime
