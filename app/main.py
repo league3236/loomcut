@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import models  # noqa: F401  (테이블 등록용)
 from app.config import get_settings
 from app.database import Base, engine
-from app.routers import auth, videos
+from app.routers import auth, payments, videos
 
 
 @asynccontextmanager
@@ -30,6 +30,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(videos.router)
+app.include_router(payments.router)
 
 
 @app.get("/health", tags=["system"])

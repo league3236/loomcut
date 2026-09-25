@@ -11,7 +11,15 @@ services:
         value: 3.12.7
       - key: JWT_SECRET
         generateValue: true
+      - key: PRICE_PER_SECOND
+        value: "400"
+      - key: ADMIN_EMAILS
+        sync: false
       - key: ATLAS_API_KEY
+        sync: false
+      - key: TOSS_CLIENT_KEY
+        sync: false
+      - key: TOSS_SECRET_KEY
         sync: false
       - key: DATABASE_URL
         fromDatabase:
