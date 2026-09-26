@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "atlascloud": {
+      "command": "npx",
+      "args": ["-y", "atlascloud-mcp"],
+      "env": {
+        "ATLASCLOUD_API_KEY": "${ATLASCLOUD_API_KEY:-}"
+      }
+    }
+  }
+}

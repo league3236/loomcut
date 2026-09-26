@@ -56,6 +56,10 @@ app/
 ## 환경변수
 `DATABASE_URL`, `JWT_SECRET`, `ADMIN_EMAILS`, `PRICE_PER_SECOND`, `DEFAULT_DURATION`, `TOSS_CLIENT_KEY`, `TOSS_SECRET_KEY`, `ATLAS_API_KEY`, `ATLAS_BASE_URL`, `DEFAULT_T2V_MODEL`, `DEFAULT_I2V_MODEL`, `CORS_ORIGINS` (전체 목록과 기본값은 `.env.example`, `app/config.py` 참고)
 
+## 개발 도구 (MCP)
+- `.mcp.json`에 Atlas Cloud MCP 서버(`atlascloud-mcp`) 등록 — 모델 목록/가격 조회, 테스트 생성, 잔액 확인용
+- 키는 환경변수 `ATLASCLOUD_API_KEY`로만 주입 (파일에 값 금지). 클라우드 세션은 환경 설정의 환경변수에 등록
+
 ## 작업 방식
 - 변경 사항은 main 브랜치에 바로 커밋 (별도 PR 불필요)
 - 커밋 메시지는 한국어, `feat:` / `fix:` / `docs:` 등 접두어 사용
