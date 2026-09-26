@@ -1,8 +1,11 @@
+import json
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.billing import is_admin, refund_job, try_charge, video_cost
+from app.catalog import get_families, provider_model_id, resolve_mode
 from app.config import get_settings
 from app.database import get_db
 from app.models import User, VideoJob
@@ -22,18 +25,34 @@ async def create_video(
     db: Session = Depends(get_db),
 ):
     s = get_settings()
-    image_url = str(body.image_url) if body.image_url else None
-    model = body.model or (s.default_i2v_model if image_url else s.default_t2v_model)
+    families = get_families()
+    family_key = body.model or s.default_model
+    family = families.get(family_key)
+    if family is None:
+        raise HTTPException(
+            status_code=400,
+            detail={"message": "Unknown model", "available": list(families.keys())},
+        )
+
+    first = str(body.first_frame_image) if body.first_frame_image else None
+    last = str(body.last_frame_image) if body.last_frame_image else None
+    refs = [str(u) for u in body.reference_images]
+    mode = resolve_mode(first, refs)
+    model_id = provider_model_id(family, mode)
     duration = body.duration or s.default_duration
-    cost = 0 if is_admin(user) else video_cost(duration)
+    cost = 0 if is_admin(user) else video_cost(family, duration)
     provider = get_provider()
 
     job = VideoJob(
         user_id=user.id,
         provider=provider.name,
-        model=model,
+        family=family.key,
+        mode=mode,
+        model=model_id,
         prompt=body.prompt,
-        image_url=image_url,
+        image_url=first,
+        last_frame_url=last,
+        reference_images_json=json.dumps(refs) if refs else None,
         duration=duration,
         charged=cost,
     )
@@ -56,7 +75,12 @@ async def create_video(
 
     try:
         result = await provider.submit(
-            model=model, prompt=body.prompt, image_url=image_url, duration=duration
+            model=model_id,
+            prompt=body.prompt,
+            duration=duration,
+            image=first,
+            last_image=last,
+            reference_images=refs or None,
         )
     except Exception as e:  # noqa: BLE001
         job.status = "failed"

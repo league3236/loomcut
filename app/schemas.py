@@ -1,6 +1,14 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, HttpUrl, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    HttpUrl,
+    field_validator,
+    model_validator,
+)
 
 
 class UserCreate(BaseModel):
@@ -30,11 +38,44 @@ class Token(BaseModel):
 
 
 class VideoCreate(BaseModel):
+    """입력에 따라 생성 모드가 자동 결정된다.
+    - reference_images 있음 → reference-to-video
+    - first_frame_image 있음 → image-to-video
+    - 둘 다 없음 → text-to-video
+    """
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "prompt": "The character in image 1 walks through the city in image 2 at night",
+                "model": "seedance-2.0-mini",
+                "reference_images": [
+                    "https://example.com/character.png",
+                    "https://example.com/city.png",
+                ],
+                "duration": 5,
+            }
+        }
+    )
+
     prompt: str = Field(min_length=1, max_length=2000)
-    image_url: HttpUrl | None = None
+    # 모델 패밀리 키 (GET /models 참고). 없으면 기본 모델
     model: str | None = None
-    # 영상 길이(초). 없으면 기본값 사용. 길이에 비례해 크레딧 차감
+    # 참고 이미지: 영상의 첫 장면(선택적으로 마지막 장면)
+    first_frame_image: HttpUrl | None = None
+    last_frame_image: HttpUrl | None = None
+    # 레퍼런스 이미지: 캐릭터/스타일/배경 참고용, 최대 9장. 프롬프트에서 "image 1" 등으로 지칭
+    reference_images: list[HttpUrl] = Field(default_factory=list, max_length=9)
+    # 영상 길이(초). 없으면 기본값. 길이에 비례해 크레딧 차감
     duration: int | None = Field(default=None, ge=4, le=15)
+
+    @model_validator(mode="after")
+    def check_images(self):
+        if self.last_frame_image and not self.first_frame_image:
+            raise ValueError("last_frame_image requires first_frame_image")
+        if self.reference_images and self.first_frame_image:
+            raise ValueError("Use either first_frame_image or reference_images, not both")
+        return self
 
 
 class VideoJobOut(BaseModel):
@@ -42,9 +83,13 @@ class VideoJobOut(BaseModel):
 
     id: int
     provider: str
+    family: str | None
+    mode: str | None
     model: str
     prompt: str
-    image_url: str | None
+    first_frame_image: str | None
+    last_frame_image: str | None
+    reference_images: list[str]
     duration: int
     status: str
     video_url: str | None
@@ -53,6 +98,22 @@ class VideoJobOut(BaseModel):
     refunded: bool
     created_at: datetime
     updated_at: datetime
+
+
+class ModelOut(BaseModel):
+    key: str
+    name: str
+    description: str
+    price_per_second: int
+    price_for_default_duration: int
+    default: bool
+
+
+class UploadOut(BaseModel):
+    url: str
+    file_name: str
+    content_type: str
+    size: int
 
 
 class PackageOut(BaseModel):

@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
@@ -29,8 +30,10 @@ class VideoJob(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     provider: Mapped[str] = mapped_column(String(50))
+    # 제공자 실제 모델 ID (예: bytedance/seedance-2.0/image-to-video)
     model: Mapped[str] = mapped_column(String(255))
     prompt: Mapped[str] = mapped_column(Text)
+    # 참고 이미지(첫 장면) URL
     image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     duration: Mapped[int] = mapped_column(Integer, default=5)
     external_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -41,12 +44,35 @@ class VideoJob(Base):
     # 차감된 크레딧 (어드민은 0), 실패 시 환불 여부
     charged: Mapped[int] = mapped_column(Integer, default=0)
     refunded: Mapped[bool] = mapped_column(Boolean, default=False)
+    # 모델 패밀리(예: seedance-2.0-mini), 생성 모드(text|image|reference)
+    family: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    mode: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    # 참고 이미지(마지막 장면) URL, 레퍼런스 이미지 URL 목록(JSON)
+    last_frame_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reference_images_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow
     )
 
     user: Mapped[User] = relationship(back_populates="jobs")
+
+    @property
+    def first_frame_image(self) -> str | None:
+        return self.image_url
+
+    @property
+    def last_frame_image(self) -> str | None:
+        return self.last_frame_url
+
+    @property
+    def reference_images(self) -> list[str]:
+        if not self.reference_images_json:
+            return []
+        try:
+            return list(json.loads(self.reference_images_json))
+        except ValueError:
+            return []
 
 
 class CreditTransaction(Base):

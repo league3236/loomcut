@@ -5,14 +5,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import models  # noqa: F401  (테이블 등록용)
 from app.config import get_settings
-from app.database import Base, engine
-from app.routers import auth, payments, videos
+from app.database import Base, add_missing_columns, engine
+from app.routers import auth, catalog, payments, uploads, videos
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # MVP 단계: 시작 시 테이블 자동 생성 (추후 Alembic 마이그레이션으로 전환)
+    # MVP 단계: 시작 시 테이블 생성 + 새 컴럼 추가 (추후 Alembic으로 전환)
     Base.metadata.create_all(bind=engine)
+    add_missing_columns()
     yield
 
 
@@ -29,6 +30,8 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+app.include_router(catalog.router)
+app.include_router(uploads.router)
 app.include_router(videos.router)
 app.include_router(payments.router)
 

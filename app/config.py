@@ -16,9 +16,15 @@ class Settings(BaseSettings):
     # 어드민: 쉼표로 구분한 이메일 목록. 어드민은 크레딧 차감 없이 무료 생성
     admin_emails: str = ""
 
-    # 과금: 영상 1초당 차감 크레딧 (1크레딧 = 1원)
-    price_per_second: int = 400
+    # 과금: 모델별 영상 1초당 차감 크레딧 (1크레딧 = 1원)
+    price_per_second: int = 400  # Seedance 2.0
+    price_per_second_fast: int = 320  # Seedance 2.0 Fast
+    price_per_second_mini: int = 65  # Seedance 2.0 Mini
     default_duration: int = 5
+    default_model: str = "seedance-2.0"
+
+    # 이미지 업로드 최대 크기(MB)
+    max_upload_mb: int = 20
 
     # 토스페이먼츠
     toss_client_key: str = ""
@@ -29,8 +35,6 @@ class Settings(BaseSettings):
     video_provider: str = "atlas"
     atlas_api_key: str = ""
     atlas_base_url: str = "https://api.atlascloud.ai"
-    default_t2v_model: str = "bytedance/seedance-2.0/text-to-video"
-    default_i2v_model: str = "bytedance/seedance-2.0/image-to-video"
 
     cors_origins: str = "*"
 

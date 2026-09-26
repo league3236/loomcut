@@ -1,6 +1,7 @@
 from sqlalchemy import update
 from sqlalchemy.orm import Session
 
+from app.catalog import ModelFamily
 from app.config import get_settings
 from app.models import CreditTransaction, User, VideoJob
 
@@ -16,8 +17,8 @@ def is_admin(user: User) -> bool:
     return user.email.lower() in get_settings().admin_email_set()
 
 
-def video_cost(duration: int) -> int:
-    return get_settings().price_per_second * duration
+def video_cost(family: ModelFamily, duration: int) -> int:
+    return family.price_per_second * duration
 
 
 def try_charge(db: Session, user_id: int, amount: int, reason: str, ref: str | None) -> bool:
